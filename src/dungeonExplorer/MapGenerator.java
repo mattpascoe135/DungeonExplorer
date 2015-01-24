@@ -3,13 +3,33 @@ package dungeonExplorer;
 import java.util.Random;
 
 public class MapGenerator {
+	char WALL = '#';
+	char FLOOR = '.';
+	char DOOR = 'D';
+	char STAIRS_UP = '@';
+	char STAIRS_DOWN = 'e';
+	char CHEST = 'C';
+	char TRAP = 'T';
+	
+	int CHEST_CHANCE = 70;		//Chance of a chest being generated
+	int CHEST_DECREASE = 20;	//Chance of chest to be decreased
+	int TRAP_CHANCE = 90;		//Chance of a trap being generated
+	int TRAP_DECREASE = 10;		//Chance of trap to be decreased
+	
+	int FILL_AMMOUNT = 70;		//Amount of wall remaining before completing the dungeon
+	
+	int ROOM_CHANCE = 65;		//Chance of a room being generated
+	int CORRIDOR_CHANCE = 35;	//Chance of a corridor being generated
+	
 	/**
 	 * 
 	 * @param args
 	 * 		MapGenerator width height,		e.g. MapGenerator 50 50
 	 */
 	public static void main(String[] args){
-		/* Get the variables */
+		/* 
+		 * Retrieve the variables for width and height of the dungeon
+		 */
 		int width;
 		int height;
 		try{
@@ -21,13 +41,23 @@ public class MapGenerator {
 		}
 			
 		char[][] map = genMap(width, height, 3, 10);
-        
+		
+		for(int i=0; i<height; i++){
+            String line = "";
+            for(int j=0; j<width; j++){
+                line += map[i][j];
+            }
+            System.out.println(line);
+        }
 	}
     
     /**
      * 
+     * 
      * @param width, width of the dungeon
      * @param height, height of the dungeon
+     * @param minSize, minimum size of a room in the dungeon
+     * @param maxSize, maximum size of a room in the dungon
      * @return
      *         return the completed map of the gird
      */
@@ -72,7 +102,6 @@ public class MapGenerator {
             while(locationFound == 0){
                 /*
                  * Find a random location along a wall, check if it can fit either a room or corridor
-                 *         TODO: Check to ensure that the outside of the room is surrounded by walls, so that it isnt overlapping into annother room
                  */
                 int wallFound = 0;
                 char direction = 'c';
@@ -81,7 +110,6 @@ public class MapGenerator {
                 while(wallFound == 0){
                     x = rand.nextInt(width);
                     y = rand.nextInt(height);
-                    //System.out.println("X: " + x + ", Y:" + y);
                     if(map[y][x] == '#'){
                         int count = 0;
                         if(y != 0){
@@ -114,8 +142,8 @@ public class MapGenerator {
                     }
                 }
                 
-                int feature = 20; //rand.nextInt(100);
-                if(feature < 60){        //Check for a room, with a 60% chance
+                int feature = rand.nextInt(100);
+                if(feature < 75){        //Check for a room, with a 60% chance
                     roomHeight = minSize + rand.nextInt(maxSize-minSize);
                     roomWidth = minSize + rand.nextInt(maxSize-minSize);
                     if(x+roomWidth+2 < width-1 && x-roomWidth > 0 && y+roomHeight+2 < height-1 && y-roomHeight > 0){
@@ -190,9 +218,87 @@ public class MapGenerator {
                         }
                     }
                 }else{                    //Check for a corridor, with a 40% chance
-                    int length = rand.nextInt(maxSize-minSize);
-                    System.out.println("Corridor");
-                    
+                						//TODO: remove teh single for loop when setting the '.' char
+                    int length = rand.nextInt(maxSize-minSize)+minSize;
+                    if(x+1 < width-1 && x-1 > 0 && y+1 < height-1 && y-1 > 0){
+                        if(direction == 'N' && y-length > 0){
+                            int validLocation= 1;
+                            for(int i=0; i<length+2; i++){
+                                for(int j=0; j<3; j++){
+                                    if(map[y-length-1+i][x-1+j] == '.'){
+                                        validLocation = 0;
+                                    }
+                                }
+                            }
+                            if(validLocation == 1){
+                                for(int i=0; i<length; i++){
+                                    map[y-length+i][x] = '.';
+                                }
+                                if(map[y+2][x] != '#'){
+                                	map[y][x] = 'D';
+                                }else{
+                                	map[y][x] = '.';
+                                }
+                            }
+                        }else if(direction == 'E' && x+length < width-1){
+                            int validLocation= 1;
+                            for(int i=0; i<3; i++){
+                                for(int j=0; j<length+2; j++){
+                                    if(map[y-1+i][x+j] == '.'){
+                                        validLocation = 0;
+                                    }
+                                }
+                            }
+                            if(validLocation == 1){
+                                for(int j=0; j<length; j++){
+                                    map[y][x+1+j] = '.';
+                                }
+                                if(map[y][x-2] != '#'){
+                                	map[y][x] = 'D';
+                                }else{
+                                	map[y][x] = '.';
+                                }
+                            }
+                        }else if(direction == 'S' && y+length < height-1){
+                            int validLocation= 1;
+                            for(int i=0; i<length+2; i++){
+                                for(int j=0; j<3; j++){
+                                    if(map[y+i][x-1+j] == '.'){
+                                        validLocation = 0;
+                                    }
+                                }
+                            }
+                            if(validLocation == 1){
+                                for(int i=0; i<length; i++){
+                                	map[y+1+i][x] = '.';
+                                }
+                                if(map[y-2][x] != '#'){
+                                	map[y][x] = 'D';
+                                }else{
+                                	map[y][x] = '.';
+                                }
+                            }
+                        }else if(direction == 'W' && x-length > 0){
+                            int validLocation= 1;
+                            for(int i=0; i<3; i++){
+                                for(int j=0; j<length+2; j++){
+                                    if(map[y-1+i][x-length-1+j] == '.'){
+                                        validLocation = 0;
+                                    }
+                                }
+                            }
+                            if(validLocation == 1){
+                                for(int j=0; j<length; j++){
+                                    map[y][x-length+j] = '.';
+                                }
+                                if(map[y][x+2] != '#'){
+                                	map[y][x] = 'D';
+                                }else{
+                                	map[y][x] = '.';
+                                }
+                            }
+                        }
+                    }
                 }
                 locationFound = 1;
             }
@@ -213,6 +319,42 @@ public class MapGenerator {
         }
         
         /*
+         * Randomly place a random amount of chests
+         */
+        int chance = 70;
+        while(rand.nextInt(100) < chance){
+        	//Search for a valid location
+        	int chestPlaced = 0;
+        	while(chestPlaced == 0){
+            	int x = rand.nextInt(width-2)+1;
+                int y = rand.nextInt(height-2)+1;
+                if(map[y][x] == '.' && map[y-1][x] == '.' && map[y][x-1] == '.' && map[y+1][x] == '.' && map[y][x+1] == '.'){
+                	map[y][x] = 'C';
+                	chestPlaced = 1;
+                }
+            }
+        	chance -= 20;
+        }
+        
+        /*
+         * Randomly place a random amount of traps
+         */
+        chance = 90;
+        while(rand.nextInt(100) < chance){
+        	//Search for a valid location
+        	int trapPlaced = 0;
+        	while(trapPlaced == 0){
+            	int x = rand.nextInt(width-2)+1;
+                int y = rand.nextInt(height-2)+1;
+                if(map[y][x] == '.' && map[y-1][x] == '.' && map[y][x-1] == '.' && map[y+1][x] == '.' && map[y][x+1] == '.'){
+                	map[y][x] = 'T';
+                	trapPlaced = 1;
+                }
+            }
+        	chance -= 10;
+        }
+        
+        /*
          * Place the stairs leading downstairs to the next level
          */
         int exitPlaced = 0;
@@ -224,14 +366,14 @@ public class MapGenerator {
             	exitPlaced = 1;
             }
         }
-        
+        /*
         for(int i=0; i<height; i++){
             String line = "";
             for(int j=0; j<width; j++){
                 line += map[i][j];
             }
             System.out.println(line);
-        }
-        return null;
+        }*/
+        return map;
     }
 }
